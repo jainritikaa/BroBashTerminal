@@ -2,6 +2,7 @@
 #include "linkedlist.h"
 #include "hashtable.h"
 #include "datastructure.h"
+#include "huffman.h"
 #include <bits/stdc++.h>
 #include <chrono>
 #include <fstream>
@@ -186,24 +187,35 @@ string padhCommand(const string &fileName) {
     if (file) {
         stringstream buffer;
         buffer << file.rdbuf();
-        result = "Bhai! File '" + fileName + "' ka content:\n" + buffer.str();
+        string fileContent = buffer.str();
+
+        size_t delimiterPos = fileContent.find("\n====\n");
+        if (delimiterPos != string::npos) {
+            string codeMapStr = fileContent.substr(0, delimiterPos);
+            string binaryData = fileContent.substr(delimiterPos + 7);
+            auto codeMap = deserializeCodeMap(codeMapStr);
+            string decompressed = decompressText(binaryData, codeMap);
+            result = "Bhai! Yeh raha decompress karke file '" + fileName + "' ka content:\n" + decompressed;
+        } else {
+            result = "Bhai! Format gadbad hai ya compression use nahi hua tha.";
+        }
     } else {
         result = "Bhai! File '" + fileName + "' nahi mil raha!";
     }
-    result += reportPerformance("padh", "O(n)", "O(n)", start);
+    result += reportPerformance("padh (Huffman)", "O(n)", "O(n)", start);
     return result;
 }
 
 string likhCommand(const string &fileName, const string &content) {
     auto start = steady_clock::now();
+    string compressed = compressText(content);
     ofstream file(fileName);
     string result = file
-        ? (file << content, "Bhai! File '" + fileName + "' mein likh diya gaya!")
+        ? (file << compressed, "Bhai! File '" + fileName + "' mein compress karke likh diya gaya!")
         : "Bhai! File '" + fileName + "' nahi bana sakte!";
-    result += reportPerformance("likh", "O(n)", "O(1)", start);
+    result += reportPerformance("likh (Huffman)", "O(n log n)", "O(n)", start);
     return result;
 }
-
 string parseBhaiLang(const string &input) {
     string output;
     size_t spacePos = input.find(" ");
